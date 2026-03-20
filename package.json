@@ -1,0 +1,30 @@
+{
+  "name": "yako-print",
+  "version": "1.0.0",
+  "description": "Yako Print - Servidor de impresión para Yako POS",
+  "main": "dist/server.js",
+  "bin": "dist/cli.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "pkg:win": "npm run build && pkg dist/cli.js --target node18-win-x64 --output ../public/downloads/yako-print-windows.exe",
+    "pkg:mac-arm64": "npm run build && pkg dist/cli.js --target node18-macos-arm64 --output ../public/downloads/yako-print-mac-arm64",
+    "pkg:mac-x64": "npm run build && pkg dist/cli.js --target node18-macos-x64 --output ../public/downloads/yako-print-mac-x64",
+    "pkg:all": "npm run build && pkg dist/cli.js --target node18-win-x64 --output ../public/downloads/yako-print-windows.exe && pkg dist/cli.js --target node18-macos-arm64 --output ../public/downloads/yako-print-mac-arm64 && pkg dist/cli.js --target node18-macos-x64 --output ../public/downloads/yako-print-mac-x64"
+  },
+  "pkg": {
+    "assets": [],
+    "outputPath": "release"
+  },
+  "dependencies": {
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.11.0",
+    "@yao-pkg/pkg": "^5.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
