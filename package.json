@@ -1,11 +1,11 @@
 {
   "name": "yako-print",
-  "version": "1.0.0",
-  "description": "Yako Print - Servidor de impresión para Yako POS",
-  "main": "dist/server.js",
+  "version": "2.0.0",
+  "description": "Yako Print - Agente de impresión para Yako POS",
+  "main": "dist/agent.js",
   "bin": "dist/cli.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch src/cli.ts",
     "build": "tsc",
     "start": "node dist/cli.js",
     "pkg:win": "npm run build && pkg dist/cli.js --target node18-win-x64 --output ../public/downloads/yako-print-windows.exe",
@@ -17,11 +17,8 @@
     "assets": [],
     "outputPath": "release"
   },
-  "dependencies": {
-    "cors": "^2.8.5"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/cors": "^2.8.17",
     "@types/node": "^20.11.0",
     "@yao-pkg/pkg": "^5.11.0",
     "tsx": "^4.7.0",

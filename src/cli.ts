@@ -4,7 +4,8 @@ import os from 'os';
 import { execSync } from 'child_process';
 import { writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
-import { startServer, getLocalIp } from './server';
+import { startAgent } from './agent';
+import { loadConfig, getConfigPath } from './config';
 
 // ── ANSI helpers ────────────────────────────────────────────────
 
@@ -51,10 +52,6 @@ function registerMacAutoStart(binPath: string): void {
   mkdirSync(plistDir, { recursive: true });
   writeFileSync(plistPath, plist);
 
-  // Load so launchd manages it from now on (including after reboot).
-  // The server is already running in THIS process, so the daemon
-  // launchd spawns will hit EADDRINUSE and exit — but KeepAlive
-  // will retry later when this process eventually exits.
   execSync(`launchctl load "${plistPath}" 2>/dev/null || true`);
 }
 
@@ -86,10 +83,10 @@ function showBanner() {
     `  ${D}│${R}                                                  ${D}│${R}`,
   );
   console.log(
-    `  ${D}│${R}              ${B}Yako Print v1.0${R}                     ${D}│${R}`,
+    `  ${D}│${R}              ${B}Yako Print v2.0${R}                     ${D}│${R}`,
   );
   console.log(
-    `  ${D}│${R}   Servidor de impresión para Yako POS             ${D}│${R}`,
+    `  ${D}│${R}   Agente de impresión para Yako POS               ${D}│${R}`,
   );
   console.log(
     `  ${D}│${R}                                                  ${D}│${R}`,
@@ -100,25 +97,6 @@ function showBanner() {
   console.log('');
 }
 
-function showAddress(address: string) {
-  console.log(
-    `  ${D}──────────────────────────────────────────────────${R}`,
-  );
-  console.log('');
-  console.log(`  ${D}Desde esta computadora:${R}`);
-  console.log(`     ${B}${C}➜  localhost:${address.split(':').pop()}${R}`);
-  console.log('');
-  console.log(`  ${D}Desde otro dispositivo (celular, tablet):${R}`);
-  console.log(`     ${B}${C}➜  ${address}${R}`);
-  console.log('');
-  console.log(`  ${D}Si abrís Yako en esta misma computadora,${R}`);
-  console.log(`  ${D}se conecta automáticamente.${R}`);
-  console.log('');
-  console.log(
-    `  ${D}──────────────────────────────────────────────────${R}`,
-  );
-}
-
 // ── Setup flow (first-time install) ─────────────────────────────
 
 async function runSetup() {
@@ -126,14 +104,23 @@ async function runSetup() {
   const platformName = platform === 'darwin' ? 'Mac' : 'Windows';
 
   showBanner();
-  console.log(`  Instalando...`);
+
+  const config = loadConfig();
+  if (!config) {
+    console.log(
+      `  ${Y}⚠${R} No se encontró ${C}config.json${R} en ${D}${getConfigPath()}${R}`,
+    );
+    console.log('');
+    console.log(
+      `  Ejecutá el comando de instalación desde la web de Yako POS.`,
+    );
+    console.log('');
+    process.exit(1);
+  }
+
+  console.log(`  ${CHECK} Configuración encontrada`);
+  console.log(`  ${D}API: ${config.apiUrl}${R}`);
   console.log('');
-
-  // Start the server directly in this process
-  const { ip, port } = await startServer();
-  const address = `${ip}:${port}`;
-
-  console.log(`  ${CHECK} Servidor iniciado`);
 
   // Register auto-start for future reboots
   const binPath = process.execPath;
@@ -148,24 +135,21 @@ async function runSetup() {
   );
   console.log('');
 
-  showAddress(address);
-  console.log('');
-  console.log(`  ${G}¡Listo!${R} Ya podés cerrar esta ventana.`);
+  console.log(`  ${G}¡Listo!${R} Yako Print está corriendo.`);
   console.log(
-    `  ${D}Yako Print va a seguir funcionando en segundo plano.${R}`,
+    `  ${D}Esperando trabajos de impresión desde la nube...${R}`,
   );
   console.log('');
 
-  // Stay alive — this process IS the server.
-  // When the user closes the terminal, the process dies,
-  // but launchd/schtasks will restart it automatically.
+  // Start the agent (runs forever)
+  await startAgent();
 }
 
 // ── Service flow (background / auto-start by launchd) ───────────
 
-async function runServer() {
-  const { ip, port } = await startServer();
-  console.log(`Yako Print running at ${ip}:${port}`);
+async function runService() {
+  console.log('Yako Print v2.0 starting...');
+  await startAgent();
 }
 
 // ── Main ────────────────────────────────────────────────────────
@@ -174,7 +158,7 @@ async function main() {
   if (isSetup) {
     await runSetup();
   } else {
-    await runServer();
+    await runService();
   }
 }
 
